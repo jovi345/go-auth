@@ -46,7 +46,15 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	err = validate.Struct(userInput)
 	if err != nil {
 		log.Printf("Error: %v", err.Error())
-		log.Print(err.Error())
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			errorMessages := make(map[string]string)
+			for _, fieldErr := range validationErrors {
+				fieldName := response.GetJSONFieldName(fieldErr.Field(), input.UserRegisterInput{})
+				errorMessages[fieldName] = "Validation failed on tag: " + fieldName
+			}
+			response.SendResponse(w, http.StatusBadRequest, errorMessages)
+			return
+		}
 		response.SendResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}

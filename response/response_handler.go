@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func SendResponse(w http.ResponseWriter, statusCode int, message string) {
+func SendResponse(w http.ResponseWriter, statusCode int, message interface{}) {
 	response := JSONResponse{
 		Status:  http.StatusText(statusCode),
 		Message: message,
