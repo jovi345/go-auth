@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/jovi345/login-register/config"
 	"github.com/jovi345/login-register/input"
@@ -35,6 +36,20 @@ func CheckEmailAvailability(userInput input.UserRegisterInput) bool {
 func Register(w http.ResponseWriter, r *http.Request) {
 	var userInput input.UserRegisterInput
 	err := json.NewDecoder(r.Body).Decode(&userInput)
+	if err != nil {
+		log.Printf("Failed to parse inptut: %v", err)
+		response.SendResponse(w, http.StatusBadRequest, "Invalid input format")
+		return
+	}
+
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	err = validate.Struct(userInput)
+	if err != nil {
+		log.Printf("Error: %v", err.Error())
+		log.Print(err.Error())
+		response.SendResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	status := CheckEmailAvailability(userInput)
 	if status {
@@ -42,14 +57,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err != nil {
-		log.Printf("Failed to parse inptut: %v", err)
-		response.SendResponse(w, http.StatusBadRequest, "Invalid input format")
-	}
-
-	inputStatus := userInput.FirstName == "" || userInput.LastName == "" || userInput.Email == "" || userInput.Password == ""
-	if inputStatus {
-		response.SendResponse(w, http.StatusBadRequest, "All fields are required")
+	if userInput.Password != userInput.ConfirmPassword {
+		response.SendResponse(w, http.StatusBadRequest, "Password do not match")
 		return
 	}
 
