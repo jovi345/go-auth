@@ -9,6 +9,7 @@ func RegisterRoutes() *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/api/v1/user/register", controllers.Register).Methods("POST")
+	r.HandleFunc("/api/v1/user/login", controllers.Login).Methods("POST")
 
 	return r
 }

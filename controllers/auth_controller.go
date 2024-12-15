@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -37,7 +38,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	var userInput input.UserRegisterInput
 	err := json.NewDecoder(r.Body).Decode(&userInput)
 	if err != nil {
-		log.Printf("Failed to parse inptut: %v", err)
+		log.Printf("Failed to parse input: %v", err)
 		response.SendResponse(w, http.StatusBadRequest, "Invalid input format")
 		return
 	}
@@ -100,4 +101,54 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.SendResponse(w, http.StatusCreated, "User registered successfully")
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	var userInput input.UserLoginInput
+	err := json.NewDecoder(r.Body).Decode(&userInput)
+	if err != nil {
+		log.Printf("Error: %v", err.Error())
+		response.SendResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	err = validate.Struct(userInput)
+	if err != nil {
+		log.Printf("Error: %v", err.Error())
+		if validationErrors, ok := err.(validator.ValidationErrors); ok {
+			errorMessages := make(map[string]string)
+			for _, fieldErr := range validationErrors {
+				fieldName := response.GetJSONFieldName(fieldErr.Field(), input.UserLoginInput{})
+				errorMessages[fieldName] = "Validation failed on tag: " + fieldName
+			}
+			response.SendResponse(w, http.StatusBadRequest, errorMessages)
+			return
+		}
+		response.SendResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	query := "SELECT id, email, password FROM users WHERE email = ?"
+	row := config.DB.QueryRow(query, userInput.Email)
+
+	var userID, email, hashedPassword string
+	err = row.Scan(&userID, &email, &hashedPassword)
+	if err == sql.ErrNoRows {
+		response.SendResponse(w, http.StatusUnauthorized, "Email not found")
+		return
+	}
+	if err != nil {
+		log.Printf("Error: %v", err.Error())
+		response.SendResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(userInput.Password))
+	if err != nil {
+		response.SendResponse(w, http.StatusUnauthorized, "Wrong password")
+		return
+	}
+
+	response.SendResponse(w, http.StatusBadRequest, []string{userID, email, hashedPassword})
 }
