@@ -13,6 +13,7 @@ import (
 	"github.com/jovi345/login-register/input"
 	"github.com/jovi345/login-register/models"
 	"github.com/jovi345/login-register/response"
+	"github.com/jovi345/login-register/token"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -150,5 +151,20 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.SendResponse(w, http.StatusBadRequest, []string{userID, email, hashedPassword})
+	accessToken, err := token.GenerateAccessToken(userID)
+	if err != nil {
+		response.SendResponse(w, http.StatusInternalServerError, "Failed to generate access token")
+		return
+	}
+
+	refreshToken, err := token.GenerateRefreshToken(userID)
+	if err != nil {
+		response.SendResponse(w, http.StatusInternalServerError, "Failed to generate refresh token")
+		return
+	}
+
+	response.SendResponse(w, http.StatusOK, map[string]string{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
 }
