@@ -5,10 +5,10 @@ import (
 	"net/http"
 )
 
-func SendResponse(w http.ResponseWriter, statusCode int, message interface{}) {
+func SendResponse(w http.ResponseWriter, statusCode int, result interface{}) {
 	response := JSONResponse{
-		Status:  http.StatusText(statusCode),
-		Message: message,
+		Status: http.StatusText(statusCode),
+		Result: result,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
