@@ -163,8 +163,19 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	lastLogin := time.Now()
+
+	query = "UPDATE users SET refresh_token = ?, last_login = ? WHERE id = ?"
+	_, err = config.DB.Exec(query, refreshToken, lastLogin, userID)
+	if err != nil {
+		log.Printf("Error: %v", err.Error())
+		response.SendResponse(w, http.StatusInternalServerError, "Failed to save refresh token")
+		return
+	}
+
+	token.SetRefreshTokenCookie(w, refreshToken)
+
 	response.SendResponse(w, http.StatusOK, map[string]string{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
+		"access_token": accessToken,
 	})
 }
