@@ -1,4 +1,4 @@
-package input
+package models
 
 type UserRegisterInput struct {
 	FirstName       string `json:"first_name" validate:"required"`

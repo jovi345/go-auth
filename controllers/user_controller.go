@@ -11,13 +11,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/jovi345/login-register/config"
 	"github.com/jovi345/login-register/helper"
-	"github.com/jovi345/login-register/input"
 	"github.com/jovi345/login-register/models"
 	"github.com/jovi345/login-register/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func CheckEmailAvailability(userInput input.UserRegisterInput) bool {
+func CheckEmailAvailability(userInput models.UserRegisterInput) bool {
 	query := "SELECT email FROM users WHERE email = ?"
 	row := config.DB.QueryRow(query, userInput.Email)
 
@@ -36,7 +35,7 @@ func CheckEmailAvailability(userInput input.UserRegisterInput) bool {
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	var userInput input.UserRegisterInput
+	var userInput models.UserRegisterInput
 	err := json.NewDecoder(r.Body).Decode(&userInput)
 	if err != nil {
 		log.Printf("Failed to parse input: %v", err)
@@ -51,7 +50,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			errorMessages := make(map[string]string)
 			for _, fieldErr := range validationErrors {
-				fieldName := helper.GetJSONFieldName(fieldErr.Field(), input.UserRegisterInput{})
+				fieldName := helper.GetJSONFieldName(fieldErr.Field(), models.UserRegisterInput{})
 				errorMessages[fieldName] = "Validation failed on tag: " + fieldName
 			}
 			helper.SendResponse(w, http.StatusBadRequest, errorMessages)
@@ -105,7 +104,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	var userInput input.UserLoginInput
+	var userInput models.UserLoginInput
 	err := json.NewDecoder(r.Body).Decode(&userInput)
 	if err != nil {
 		log.Printf("Error: %v", err.Error())
@@ -120,7 +119,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			errorMessages := make(map[string]string)
 			for _, fieldErr := range validationErrors {
-				fieldName := helper.GetJSONFieldName(fieldErr.Field(), input.UserLoginInput{})
+				fieldName := helper.GetJSONFieldName(fieldErr.Field(), models.UserLoginInput{})
 				errorMessages[fieldName] = "Validation failed on tag: " + fieldName
 			}
 			helper.SendResponse(w, http.StatusBadRequest, errorMessages)
