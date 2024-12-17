@@ -17,3 +17,14 @@ func SetRefreshTokenCookie(w http.ResponseWriter, refreshToken string) {
 	}
 	http.SetCookie(w, cookie)
 }
+
+func ClearCookie(w http.ResponseWriter) {
+	cookie := &http.Cookie{
+		Name:    "refresh_token",
+		Value:   "",
+		Expires: time.Unix(0, 0),
+		Path:    "/",
+	}
+
+	http.SetCookie(w, cookie)
+}

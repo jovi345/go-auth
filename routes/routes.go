@@ -12,6 +12,7 @@ func RegisterRoutes() *mux.Router {
 
 	r.HandleFunc("/api/v1/user/register", controllers.Register).Methods("POST")
 	r.HandleFunc("/api/v1/user/login", controllers.Login).Methods("POST")
+	r.HandleFunc("/api/v1/user/logout", controllers.Logout).Methods("DELETE")
 	r.HandleFunc("/api/v1/protected", middlewares.JWTAuthMiddleware(controllers.ProtectedEndpoint)).Methods("GET")
 	r.HandleFunc("/api/v1/token/refresh", token.RefreshToken)
 

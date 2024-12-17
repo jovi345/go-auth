@@ -179,3 +179,33 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		"access_token": accessToken,
 	})
 }
+
+func Logout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		response.SendResponse(w, http.StatusNoContent, "No content")
+		return
+	}
+
+	refreshToken := cookie.Value
+	query := "SELECT id FROM users WHERE refresh_token = ?"
+	row := config.DB.QueryRow(query, refreshToken)
+
+	var userID string
+	err = row.Scan(&userID)
+	if err == sql.ErrNoRows {
+		response.SendResponse(w, http.StatusNoContent, "No content")
+		return
+	}
+
+	query = "UPDATE users SET refresh_token = ? WHERE id = ?"
+	_, err = config.DB.Exec(query, sql.NullString{}, userID)
+	if err != nil {
+		response.SendResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	token.ClearCookie(w)
+
+	response.SendResponse(w, http.StatusOK, "Successfully logged out")
+}
