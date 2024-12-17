@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	"github.com/joho/godotenv"
 	"github.com/jovi345/login-register/config"
 	"github.com/jovi345/login-register/route"
@@ -17,7 +18,14 @@ func main() {
 
 	config.Connect()
 
+	corsOptions := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedHeaders([]string{"Content-Type", "Authorization"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		handlers.AllowCredentials(),
+	)
+
 	r := route.RegisterRoutes()
 	log.Println("Server is running on port 8080...")
-	http.ListenAndServe(":8080", r)
+	http.ListenAndServe(":8080", corsOptions(r))
 }
