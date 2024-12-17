@@ -129,11 +129,11 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := "SELECT id, email, password FROM users WHERE email = ?"
+	query := "SELECT id, email, first_name, last_name, role, password FROM users WHERE email = ?"
 	row := config.DB.QueryRow(query, userInput.Email)
 
-	var userID, email, hashedPassword string
-	err = row.Scan(&userID, &email, &hashedPassword)
+	var userID, email, firstName, lastName, role, hashedPassword string
+	err = row.Scan(&userID, &email, &firstName, &lastName, &role, &hashedPassword)
 	if err == sql.ErrNoRows {
 		helper.SendResponse(w, http.StatusUnauthorized, "Email not found")
 		return
@@ -150,13 +150,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := utils.GenerateAccessToken(userID)
+	accessToken, err := utils.GenerateAccessToken(userID, email, firstName, lastName, role)
 	if err != nil {
 		helper.SendResponse(w, http.StatusInternalServerError, "Failed to generate access token")
 		return
 	}
 
-	refreshToken, err := utils.GenerateRefreshToken(userID)
+	refreshToken, err := utils.GenerateRefreshToken(userID, email, firstName, lastName, role)
 	if err != nil {
 		helper.SendResponse(w, http.StatusInternalServerError, "Failed to generate refresh token")
 		return

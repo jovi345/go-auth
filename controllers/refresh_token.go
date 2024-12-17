@@ -20,11 +20,11 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	secretKey := os.Getenv("JWT_SECRET_REFRESH")
 	refreshToken := cookie.Value
 
-	query := "SELECT id FROM users WHERE refresh_token = ?"
+	query := "SELECT id, email, first_name, last_name, role FROM users WHERE refresh_token= ?"
 	row := config.DB.QueryRow(query, refreshToken)
 
-	var userID string
-	err = row.Scan(&userID)
+	var userID, email, firstName, lastName, role string
+	err = row.Scan(&userID, &email, &firstName, &lastName, &role)
 	if err == sql.ErrNoRows {
 		helper.SendResponse(w, http.StatusForbidden, "User not found")
 		return
@@ -36,7 +36,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := utils.GenerateAccessToken(userID)
+	accessToken, err := utils.GenerateAccessToken(userID, email, firstName, lastName, role)
 	if err != nil {
 		helper.SendResponse(w, http.StatusInternalServerError, "Failed to generate access token")
 		return

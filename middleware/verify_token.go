@@ -25,12 +25,13 @@ func VerifyToken(next http.HandlerFunc) http.HandlerFunc {
 
 		accessToken := tokenParts[1]
 		secretKey := os.Getenv("JWT_SECRET_ACCESS")
-		_, err := utils.ValidateToken(accessToken, secretKey)
+		claims, err := utils.ValidateToken(accessToken, secretKey)
 		if err != nil {
 			helper.SendResponse(w, http.StatusForbidden, "Invalid or expired token")
 			return
 		}
 
+		r = r.WithContext(utils.ContextWithClaims(r.Context(), *claims))
 		next(w, r)
 	}
 }
