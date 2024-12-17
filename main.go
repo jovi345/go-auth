@@ -6,7 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/jovi345/login-register/config"
-	"github.com/jovi345/login-register/routes"
+	"github.com/jovi345/login-register/route"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 
 	config.Connect()
 
-	r := routes.RegisterRoutes()
+	r := route.RegisterRoutes()
 	log.Println("Server is running on port 8080...")
 	http.ListenAndServe(":8080", r)
 }

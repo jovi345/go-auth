@@ -10,10 +10,10 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/jovi345/login-register/config"
+	"github.com/jovi345/login-register/helper"
 	"github.com/jovi345/login-register/input"
 	"github.com/jovi345/login-register/models"
-	"github.com/jovi345/login-register/response"
-	"github.com/jovi345/login-register/token"
+	"github.com/jovi345/login-register/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -40,7 +40,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&userInput)
 	if err != nil {
 		log.Printf("Failed to parse input: %v", err)
-		response.SendResponse(w, http.StatusBadRequest, "Invalid input format")
+		helper.SendResponse(w, http.StatusBadRequest, "Invalid input format")
 		return
 	}
 
@@ -51,31 +51,31 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			errorMessages := make(map[string]string)
 			for _, fieldErr := range validationErrors {
-				fieldName := response.GetJSONFieldName(fieldErr.Field(), input.UserRegisterInput{})
+				fieldName := helper.GetJSONFieldName(fieldErr.Field(), input.UserRegisterInput{})
 				errorMessages[fieldName] = "Validation failed on tag: " + fieldName
 			}
-			response.SendResponse(w, http.StatusBadRequest, errorMessages)
+			helper.SendResponse(w, http.StatusBadRequest, errorMessages)
 			return
 		}
-		response.SendResponse(w, http.StatusBadRequest, err.Error())
+		helper.SendResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	status := CheckEmailAvailability(userInput)
 	if status {
-		response.SendResponse(w, http.StatusBadRequest, "Email is not available")
+		helper.SendResponse(w, http.StatusBadRequest, "Email is not available")
 		return
 	}
 
 	if userInput.Password != userInput.ConfirmPassword {
-		response.SendResponse(w, http.StatusBadRequest, "Password do not match")
+		helper.SendResponse(w, http.StatusBadRequest, "Password do not match")
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userInput.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.Printf("Error: %v", err)
-		response.SendResponse(w, http.StatusInternalServerError, "Internal server error")
+		helper.SendResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -97,11 +97,11 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Printf("Error: %v", err)
-		response.SendResponse(w, http.StatusInternalServerError, "Internal server error")
+		helper.SendResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	response.SendResponse(w, http.StatusCreated, "User registered successfully")
+	helper.SendResponse(w, http.StatusCreated, "User registered successfully")
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +109,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&userInput)
 	if err != nil {
 		log.Printf("Error: %v", err.Error())
-		response.SendResponse(w, http.StatusInternalServerError, err.Error())
+		helper.SendResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -120,13 +120,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		if validationErrors, ok := err.(validator.ValidationErrors); ok {
 			errorMessages := make(map[string]string)
 			for _, fieldErr := range validationErrors {
-				fieldName := response.GetJSONFieldName(fieldErr.Field(), input.UserLoginInput{})
+				fieldName := helper.GetJSONFieldName(fieldErr.Field(), input.UserLoginInput{})
 				errorMessages[fieldName] = "Validation failed on tag: " + fieldName
 			}
-			response.SendResponse(w, http.StatusBadRequest, errorMessages)
+			helper.SendResponse(w, http.StatusBadRequest, errorMessages)
 			return
 		}
-		response.SendResponse(w, http.StatusBadRequest, err.Error())
+		helper.SendResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -136,30 +136,30 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	var userID, email, hashedPassword string
 	err = row.Scan(&userID, &email, &hashedPassword)
 	if err == sql.ErrNoRows {
-		response.SendResponse(w, http.StatusUnauthorized, "Email not found")
+		helper.SendResponse(w, http.StatusUnauthorized, "Email not found")
 		return
 	}
 	if err != nil {
 		log.Printf("Error: %v", err.Error())
-		response.SendResponse(w, http.StatusBadRequest, err.Error())
+		helper.SendResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(userInput.Password))
 	if err != nil {
-		response.SendResponse(w, http.StatusUnauthorized, "Wrong password")
+		helper.SendResponse(w, http.StatusUnauthorized, "Wrong password")
 		return
 	}
 
-	accessToken, err := token.GenerateAccessToken(userID)
+	accessToken, err := utils.GenerateAccessToken(userID)
 	if err != nil {
-		response.SendResponse(w, http.StatusInternalServerError, "Failed to generate access token")
+		helper.SendResponse(w, http.StatusInternalServerError, "Failed to generate access token")
 		return
 	}
 
-	refreshToken, err := token.GenerateRefreshToken(userID)
+	refreshToken, err := utils.GenerateRefreshToken(userID)
 	if err != nil {
-		response.SendResponse(w, http.StatusInternalServerError, "Failed to generate refresh token")
+		helper.SendResponse(w, http.StatusInternalServerError, "Failed to generate refresh token")
 		return
 	}
 
@@ -169,13 +169,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	_, err = config.DB.Exec(query, refreshToken, lastLogin, userID)
 	if err != nil {
 		log.Printf("Error: %v", err.Error())
-		response.SendResponse(w, http.StatusInternalServerError, "Failed to save refresh token")
+		helper.SendResponse(w, http.StatusInternalServerError, "Failed to save refresh token")
 		return
 	}
 
-	token.SetRefreshTokenCookie(w, refreshToken)
+	utils.SetRefreshTokenCookie(w, refreshToken)
 
-	response.SendResponse(w, http.StatusOK, map[string]string{
+	helper.SendResponse(w, http.StatusOK, map[string]string{
 		"access_token": accessToken,
 	})
 }
@@ -183,7 +183,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 func Logout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
-		response.SendResponse(w, http.StatusNoContent, "No content")
+		helper.SendResponse(w, http.StatusNoContent, "No content")
 		return
 	}
 
@@ -194,18 +194,18 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	var userID string
 	err = row.Scan(&userID)
 	if err == sql.ErrNoRows {
-		response.SendResponse(w, http.StatusNoContent, "No content")
+		helper.SendResponse(w, http.StatusNoContent, "No content")
 		return
 	}
 
 	query = "UPDATE users SET refresh_token = ? WHERE id = ?"
 	_, err = config.DB.Exec(query, sql.NullString{}, userID)
 	if err != nil {
-		response.SendResponse(w, http.StatusInternalServerError, err.Error())
+		helper.SendResponse(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	token.ClearCookie(w)
+	utils.ClearCookie(w)
 
-	response.SendResponse(w, http.StatusOK, "Successfully logged out")
+	helper.SendResponse(w, http.StatusOK, "Successfully logged out")
 }

@@ -1,4 +1,4 @@
-package token
+package controllers
 
 import (
 	"database/sql"
@@ -6,13 +6,14 @@ import (
 	"os"
 
 	"github.com/jovi345/login-register/config"
-	"github.com/jovi345/login-register/response"
+	"github.com/jovi345/login-register/helper"
+	"github.com/jovi345/login-register/utils"
 )
 
 func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
-		response.SendResponse(w, http.StatusUnauthorized, "Refresh token not found")
+		helper.SendResponse(w, http.StatusUnauthorized, "Refresh token not found")
 		return
 	}
 
@@ -25,23 +26,23 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var userID string
 	err = row.Scan(&userID)
 	if err == sql.ErrNoRows {
-		response.SendResponse(w, http.StatusForbidden, "User not found")
+		helper.SendResponse(w, http.StatusForbidden, "User not found")
 		return
 	}
 
-	_, err = ParseToken(refreshToken, secretKey)
+	_, err = utils.ValidateToken(refreshToken, secretKey)
 	if err != nil {
-		response.SendResponse(w, http.StatusForbidden, "Invalid or expired token")
+		helper.SendResponse(w, http.StatusForbidden, "Invalid or expired token")
 		return
 	}
 
-	accessToken, err := GenerateAccessToken(userID)
+	accessToken, err := utils.GenerateAccessToken(userID)
 	if err != nil {
-		response.SendResponse(w, http.StatusInternalServerError, "Failed to generate access token")
+		helper.SendResponse(w, http.StatusInternalServerError, "Failed to generate access token")
 		return
 	}
 
-	response.SendResponse(w, http.StatusOK, map[string]string{
+	helper.SendResponse(w, http.StatusOK, map[string]string{
 		"access_token": accessToken,
 	})
 }
