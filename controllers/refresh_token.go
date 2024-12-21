@@ -13,6 +13,7 @@ import (
 func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
+		utils.ClearCookie(w)
 		helper.SendResponse(w, http.StatusUnauthorized, "Refresh token not found")
 		return
 	}

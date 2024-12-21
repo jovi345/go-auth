@@ -9,7 +9,7 @@ import (
 
 func GenerateAccessToken(userID string, email string, firstName string, lastName string, role string) (string, error) {
 	secret := os.Getenv("JWT_SECRET_ACCESS")
-	expirationMinutes := 15
+	expirationSeconds := 15
 
 	claims := jwt.MapClaims{
 		"user_id":    userID,
@@ -17,7 +17,7 @@ func GenerateAccessToken(userID string, email string, firstName string, lastName
 		"first_name": firstName,
 		"last_name":  lastName,
 		"role":       role,
-		"exp":        time.Now().Add(time.Duration(expirationMinutes) * time.Minute).Unix(),
+		"exp":        time.Now().Add(time.Duration(expirationSeconds) * time.Second).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -26,7 +26,7 @@ func GenerateAccessToken(userID string, email string, firstName string, lastName
 
 func GenerateRefreshToken(userID string, email string, firstName string, lastName string, role string) (string, error) {
 	secret := os.Getenv("JWT_SECRET_REFRESH")
-	expirationDays := 7
+	expirationDays := 5
 
 	claims := jwt.MapClaims{
 		"user_id":    userID,

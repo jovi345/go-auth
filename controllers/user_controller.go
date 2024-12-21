@@ -208,3 +208,24 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 	helper.SendResponse(w, http.StatusOK, "Successfully logged out")
 }
+
+func GetUserEmail(w http.ResponseWriter, r *http.Request) {
+	claims, ok := utils.GetClaimsFromContext(r.Context())
+	if !ok {
+		helper.SendResponse(w, http.StatusUnauthorized, "Unable to extract user information")
+		return
+	}
+	email := claims["email"].(string)
+	query := "SELECT email FROM users WHERE email = ?"
+	row := config.DB.QueryRow(query, email)
+
+	var data string
+
+	err := row.Scan(&data)
+	if err == sql.ErrNoRows {
+		helper.SendResponse(w, http.StatusNoContent, "No content")
+		return
+	}
+
+	helper.SendResponse(w, http.StatusOK, data)
+}
